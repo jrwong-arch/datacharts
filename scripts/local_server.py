@@ -8,8 +8,8 @@ from http.server import ThreadingHTTPServer, SimpleHTTPRequestHandler
 HOST = "127.0.0.1"
 PORT = 8765
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-BIN_DIR = os.path.join(PROJECT_ROOT, "bin")
-DATA_PATH = os.path.join(BIN_DIR, "data.json")
+TREEMAP_DIR = os.path.join(PROJECT_ROOT, "tree_map")
+DATA_PATH = os.path.join(TREEMAP_DIR, "data.json")
 
 DEFAULT_DATA = [
     {"name": "Living", "parent": "Indoor", "value": 222},
@@ -22,9 +22,9 @@ DEFAULT_DATA = [
 
 
 def ensure_data_file():
-    """Create bin/data.json if missing so treemap has initial content."""
-    if not os.path.isdir(BIN_DIR):
-        os.makedirs(BIN_DIR)
+    """Create tree_map/data.json if missing so treemap has initial content."""
+    if not os.path.isdir(TREEMAP_DIR):
+        os.makedirs(TREEMAP_DIR)
     if not os.path.exists(DATA_PATH):
         with open(DATA_PATH, "w", encoding="utf-8") as f:
             json.dump(DEFAULT_DATA, f, ensure_ascii=False, indent=2)
@@ -121,7 +121,7 @@ def main():
     ensure_data_file()
     server = ThreadingHTTPServer((HOST, PORT), TreemapRequestHandler)
     print("Serving datacharts at http://{0}:{1}".format(HOST, PORT))
-    print("Treemap page: http://{0}:{1}/bin/animated_treemap.html".format(HOST, PORT))
+    print("Treemap page: http://{0}:{1}/tree_map/animated_treemap.html".format(HOST, PORT))
     print("Update endpoint: POST http://{0}:{1}/update".format(HOST, PORT))
     server.serve_forever()
 

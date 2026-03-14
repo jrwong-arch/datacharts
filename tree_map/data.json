@@ -2,31 +2,31 @@
   {
     "name": "Living",
     "parent": "Indoor",
-    "value": 73
+    "value": 174
   },
   {
     "name": "Kitchen",
     "parent": "Indoor",
-    "value": 109
+    "value": 80
   },
   {
     "name": "Bedroom",
     "parent": "Terrace",
-    "value": 111
+    "value": 204
   },
   {
     "name": "Deck",
     "parent": "Outdoor",
-    "value": 47
+    "value": 106
   },
   {
     "name": "Garden",
     "parent": "Outdoor",
-    "value": 64
+    "value": 218
   },
   {
     "name": "Pool",
     "parent": "Outdoor",
-    "value": 195
+    "value": 191
   }
 ]

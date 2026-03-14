@@ -59,7 +59,7 @@ const color = d3.scaleOrdinal(d3.schemeTableau10);
 const svg = d3.select("#chart");
 const tooltip = d3.select("#tooltip");
 const subtitle = document.getElementById("subtitle");
-const DATA_URL = "/bin/data.json";
+const DATA_URL = "/tree_map/data.json";
 const POLL_MS = 700;
 
 let latestData = FALLBACK_DATA;
@@ -188,7 +188,7 @@ async function fetchLatestData() {
     const rows = normalizeRows(await response.json());
     if (rows.length === 0) throw new Error("Empty data payload");
     latestData = rows;
-    subtitle.textContent = "Live from /bin/data.json";
+    subtitle.textContent = "Live from /tree_map/data.json";
   } catch (err) {
     subtitle.textContent = "Using fallback data (server unavailable)";
   }
