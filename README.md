@@ -1,14 +1,19 @@
 # Rhino 8 Web Graph Prototype
 
-Minimal Rhino 8 Python setup that opens an Eto popup with a `WebView` to preview chart URLs (for example Flourish embed links).
+Minimal Rhino 8 Python setup that opens an Eto popup with a `WebView` to preview chart URLs and a local animated D3 treemap fed by dynamic JSON.
 
 ## Project structure
 
 - `scripts/ui_popup.py` - Eto dialog UI with two modes:
   - **Flourish URL** mode (paste/load an embed URL)
-  - **Animated Treemap (local)** mode (loads `bin/animated_treemap.html`)
+  - **Animated Treemap (local server)** mode (loads `http://127.0.0.1:8765/bin/animated_treemap.html`)
 - `scripts/run_button.py` - simple launch script intended for a Rhino toolbar button.
 - `scripts/run_button_animated.py` - launcher that opens directly in local animated treemap mode.
+- `scripts/local_server.py` - local HTTP server that:
+  - serves project files from repo root
+  - exposes `POST /update` to receive JSON updates
+  - stores latest data in `bin/data.json`
+- `bin/data.json` - current treemap dataset consumed by `bin/animated_treemap.html`
 
 ## Requirements
 
@@ -28,15 +33,29 @@ For direct local animated treemap mode:
 
 `_-RunPythonScript "C:\Users\Matea.Pinjusic\Documents\datacharts\scripts\run_button_animated.py"`
 
+Start local server (required for animated mode dynamic data):
+
+`python "C:\Users\Matea.Pinjusic\Documents\datacharts\scripts\local_server.py"`
+
 ## Usage
 
 1. Run `run_button.py` from Rhino.
 2. Choose mode:
    - **Flourish URL** for external embed links
-   - **Animated Treemap (local)** to load `bin/animated_treemap.html`
+   - **Animated Treemap (local server)** to load `http://127.0.0.1:8765/bin/animated_treemap.html`
 3. In URL mode, paste your chart URL into the textbox.
 4. Click **Load URL** (or **Load Treemap** in local mode).
 5. Click **Reload** if you update data on the server side.
+
+## Grasshopper -> Treemap live flow
+
+1. Start `scripts/local_server.py`.
+2. In Grasshopper, compute treemap JSON rows as a list of objects:
+   - `{ "name": "...", "parent": "...", "value": 123 }`
+3. Keep the previous payload hash in `scriptcontext.sticky`.
+4. Only when changed, `POST` the JSON list to:
+   - `http://127.0.0.1:8765/update`
+5. `animated_treemap.html` polls `bin/data.json` every ~700ms and re-renders when data changes.
 
 ## Notes
 

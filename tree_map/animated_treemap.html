@@ -46,18 +46,24 @@
 <div id="tooltip"></div>
 
 <script>
-const sampleData = [
+const FALLBACK_DATA = [
   { name: "Living", parent: "Indoor", value: 222 },
-  { name: "Kitchen", parent: "Indoor", value: 350 },
-  { name: "Bedroom", parent: "Terrace", value: 200 },
+  { name: "Kitchen", parent: "Indoor", value: 150 },
+  { name: "Bedroom", parent: "Terrace", value: 250 },
   { name: "Deck", parent: "Outdoor", value: 200 },
-  { name: "Garden", parent: "Outdoor", value: 200 },
+  { name: "Garden", parent: "Outdoor", value: 150 },
   { name: "Pool", parent: "Outdoor", value: 15 }
 ];
 
 const color = d3.scaleOrdinal(d3.schemeTableau10);
 const svg = d3.select("#chart");
 const tooltip = d3.select("#tooltip");
+const subtitle = document.getElementById("subtitle");
+const DATA_URL = "/bin/data.json";
+const POLL_MS = 700;
+
+let latestData = FALLBACK_DATA;
+let lastRenderedHash = "";
 
 function showTT(e, name, val, group) {
   tooltip.style("opacity", 1)
@@ -70,6 +76,10 @@ function moveTT(e) {
 function hideTT() { tooltip.style("opacity", 0); }
 
 function buildHierarchy(data) {
+  if (!Array.isArray(data) || data.length === 0) {
+    data = FALLBACK_DATA;
+  }
+
   const childNames = new Set(data.map(d => d.name));
   const missing = [...new Set(data.map(d => d.parent).filter(Boolean))].filter(p => !childNames.has(p));
   const allNodes = [
@@ -81,14 +91,14 @@ function buildHierarchy(data) {
     .sum(d => d.value).sort((a,b) => b.value - a.value);
 }
 
-function render() {
+function render(data) {
   const W = document.getElementById("chart-wrap").clientWidth;
   const H = document.getElementById("chart-wrap").clientHeight;
   if (W === 0 || H === 0) return; // Prevent errors if container isn't ready
   
   svg.attr("width", W).attr("height", H);
 
-  const root = buildHierarchy(sampleData);
+  const root = buildHierarchy(data);
   d3.treemap().size([W, H]).paddingOuter(4).paddingTop(22).paddingInner(2).round(true)(root);
 
   // adding labels to parents / hierarchal
@@ -149,8 +159,53 @@ function render() {
   });
 }
 
-render();
-window.addEventListener("resize", render);
+function dataHash(rows) {
+  try {
+    return JSON.stringify(rows);
+  } catch (e) {
+    return "";
+  }
+}
+
+function normalizeRows(rows) {
+  if (!Array.isArray(rows)) return [];
+  return rows
+    .map(row => ({
+      name: String(row.name || "").trim(),
+      parent: String(row.parent || "Total").trim() || "Total",
+      value: Number(row.value) || 0
+    }))
+    .filter(row => row.name.length > 0);
+}
+
+async function fetchLatestData() {
+  try {
+    const response = await fetch(`${DATA_URL}?t=${Date.now()}`, {
+      cache: "no-store",
+      headers: { "Accept": "application/json" }
+    });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const rows = normalizeRows(await response.json());
+    if (rows.length === 0) throw new Error("Empty data payload");
+    latestData = rows;
+    subtitle.textContent = "Live from /bin/data.json";
+  } catch (err) {
+    subtitle.textContent = "Using fallback data (server unavailable)";
+  }
+}
+
+async function refreshIfChanged() {
+  await fetchLatestData();
+  const currentHash = dataHash(latestData);
+  if (currentHash && currentHash !== lastRenderedHash) {
+    lastRenderedHash = currentHash;
+    render(latestData);
+  }
+}
+
+refreshIfChanged();
+window.setInterval(refreshIfChanged, POLL_MS);
+window.addEventListener("resize", () => render(latestData));
 </script>
 </body>
 </html>

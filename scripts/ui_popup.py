@@ -2,14 +2,14 @@
 """Rhino 8 Eto popup for quickly previewing web-based charts."""
 
 import System
-import os
 import Rhino
 import Eto.Forms as forms
 import Eto.Drawing as drawing
 
 DEFAULT_URL = "https://public.flourish.studio/visualisation/28056071/"
 MODE_URL = "Flourish URL"
-MODE_ANIMATED = "Animated Treemap (local)"
+MODE_ANIMATED = "Animated Treemap (local server)"
+LOCAL_SERVER_TREEMAP_URL = "http://127.0.0.1:8765/bin/animated_treemap.html"
 _DIALOG = None
 
 
@@ -98,19 +98,12 @@ class WebGraphDialog(forms.Form):
             self.status_label.Text = "Invalid URL: {0}".format(exc)
 
     def _load_local_animated_treemap(self):
-        """Load local D3 animated treemap HTML in the WebView."""
-        html_path = os.path.abspath(
-            os.path.join(os.path.dirname(__file__), "..", "bin", "animated_treemap.html")
-        )
-        if not os.path.exists(html_path):
-            self.status_label.Text = "Missing file: {0}".format(html_path)
-            return
-
+        """Load animated treemap from local HTTP server in the WebView."""
         try:
-            self.web.Url = System.Uri(html_path)
-            self.status_label.Text = "Loading local animated treemap..."
+            self.web.Url = System.Uri(LOCAL_SERVER_TREEMAP_URL)
+            self.status_label.Text = "Loading animated treemap from local server..."
         except Exception as exc:
-            self.status_label.Text = "Failed to load local file: {0}".format(exc)
+            self.status_label.Text = "Failed to load local server URL: {0}".format(exc)
 
     @staticmethod
     def _normalize_flourish_url(raw_url):
@@ -161,7 +154,7 @@ class WebGraphDialog(forms.Form):
         if is_url_mode:
             self.status_label.Text = "Paste an embed URL and click Load URL."
         else:
-            self.status_label.Text = "Load local animated treemap from bin folder."
+            self.status_label.Text = "Load animated treemap from http://127.0.0.1:8765."
 
     def _current_mode(self):
         idx = self.mode_dropdown.SelectedIndex
