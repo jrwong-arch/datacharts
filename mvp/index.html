@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<body>
+  <canvas id="myCanvas" width="400" height="200"></canvas>
+
+  <script>
+    async function poll() {
+      try {
+        // read data from grasshopper
+        const res = await fetch("gh_dashboard.json?t=" + Date.now());
+        const json = await res.json();
+
+        // draw data
+        const canvas = document.getElementById('myCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        ctx.fillStyle = '#ff0055'; 
+        ctx.fillRect(0, 0, 400, 200);
+        
+        ctx.fillStyle = 'white';   
+        ctx.font = '30px Arial';
+        ctx.fillText(json.message, 50, 100);
+
+        // send a screenshot to rhino (rendering the html page)
+        canvas.toBlob(blob => {
+          fetch('/screenshot', { method: 'POST', body: blob });
+        });
+      } catch(e) {}
+    }
+
+    // repeat the loop every 100 ms
+    setInterval(poll, 100);
+  </script>
+</body>
+</html>
