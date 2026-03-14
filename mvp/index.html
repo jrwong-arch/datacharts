@@ -1,35 +1,192 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>GH Treemap</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #fff;
+    font-family: -apple-system, system-ui, sans-serif;
+    color: #333; padding: 24px; height: 100vh; display: flex; flex-direction: column;
+  }
+  #header { margin-bottom: 20px; flex-shrink: 0; }
+  #title { font-size: 22px; font-weight: 700; color: #111; letter-spacing: -0.02em; }
+  #subtitle { font-size: 14px; color: #666; margin-top: 4px; }
+  #status { font-size: 11px; color: #999; margin-top: 8px; font-variant-numeric: tabular-nums; }
+  
+  #chart-wrap { flex: 1; min-height: 0; position: relative; }
+  svg { display: block; width: 100%; height: 100%; overflow: visible; }
+
+  .node rect { stroke: #fff; stroke-width: 2px; transition: opacity 0.2s; cursor: pointer; }
+  .node rect:hover { opacity: 0.7; }
+  .node text { pointer-events: none; }
+  .parent-label { font-size: 11px; font-weight: bold; fill: #555; text-transform: uppercase; letter-spacing: 0.05em; }
+
+  #tooltip {
+    position: absolute; background: rgba(255,255,255,0.95); border: 1px solid #ddd;
+    padding: 8px 12px; border-radius: 4px; pointer-events: none; opacity: 0;
+    font-size: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); z-index: 1000;
+  }
+  .tt-name { font-weight: 700; color: #111; margin-bottom: 2px; }
+  .tt-val { color: #555; font-size: 11px; }
+</style>
+</head>
 <body>
-  <canvas id="myCanvas" width="400" height="200"></canvas>
 
-  <script>
-    async function poll() {
-      try {
-        // read data from grasshopper
-        const res = await fetch("gh_dashboard.json?t=" + Date.now());
-        const json = await res.json();
+<div id="header">
+  <div id="title">Dashboard</div>
+  <div id="subtitle">loading...</div>
+  <div id="status"></div>
+</div>
 
-        // draw data
-        const canvas = document.getElementById('myCanvas');
-        const ctx = canvas.getContext('2d');
-        
-        ctx.fillStyle = '#ff0055'; 
-        ctx.fillRect(0, 0, 400, 200);
-        
-        ctx.fillStyle = 'white';   
-        ctx.font = '30px Arial';
-        ctx.fillText(json.message, 50, 100);
+<div id="chart-wrap">
+  <svg id="chart"></svg>
+</div>
 
-        // send a screenshot to rhino (rendering the html page)
-        canvas.toBlob(blob => {
-          fetch('/screenshot', { method: 'POST', body: blob });
-        });
-      } catch(e) {}
+<script>
+// config and state
+const DATA_FILE = "mvp/gh_dashboard.json";
+const POLL_MS = 100;
+const UNIT = "m²";
+const color = d3.scaleOrdinal(d3.schemeTableau10);
+let lastUpdated = null;
+
+const svg = d3.select("#chart");
+const tooltip = d3.select("body").append("div").attr("id", "tooltip");
+
+// tooltip logic
+function showTT(e, name, val, group) {
+  let gText = (group && group !== "Total" && group !== name) ? `<div class="tt-val">group: ${group}</div>` : '';
+  tooltip.style("opacity", 1).html(`<div class="tt-name">${name}</div><div class="tt-val">${val.toFixed(1)} ${UNIT}</div>${gText}`);
+  moveTT(e);
+}
+function moveTT(e) {
+  let x = e.pageX + 15, y = e.pageY - 15;
+  if (x + 150 > window.innerWidth) x = e.pageX - 165;
+  tooltip.style("left", x + "px").style("top", y + "px");
+}
+function hideTT() { tooltip.style("opacity", 0); }
+
+// fetch data periodically
+async function poll() {
+  try {
+    const res = await fetch(DATA_FILE + "?t=" + Date.now());
+    const json = await res.json();
+
+    if (json.updated !== lastUpdated) {
+      lastUpdated = json.updated;
+      document.getElementById("title").textContent = json.config.title;
+      document.getElementById("subtitle").textContent = json.config.subtitle;
+      document.getElementById("status").textContent = "live: " + new Date().toLocaleTimeString();
+      
+      const wrap = document.getElementById("chart-wrap");
+      let W = wrap.clientWidth || 800;
+      let H = wrap.clientHeight || 600;
+      
+      drawTreemap(json, W, H); 
     }
+  } catch(e) {}
+}
 
-    // repeat the loop every 100 ms
-    setInterval(poll, 100);
-  </script>
+// convert flat data to tree
+function buildHierarchy(data) {
+  const hasParents = data.some(d => d.parent);
+  if (!hasParents) return d3.hierarchy({ name: "Total", children: data }).sum(d => d.value).sort((a,b) => b.value - a.value);
+  
+  const childNames = new Set(data.map(d => d.name));
+  const missing = [...new Set(data.map(d => d.parent).filter(Boolean))].filter(p => !childNames.has(p));
+  const allNodes = [
+    { name: "Total", parent: null }, 
+    ...missing.map(p => ({ name: p, parent: "Total" })), 
+    ...data.map(d => ({ ...d, parent: d.parent || "Total" }))
+  ];
+  return d3.stratify().id(d => d.name).parentId(d => d.parent)(allNodes).sum(d => d.value).sort((a,b) => b.value - a.value);
+}
+
+// render treemap to svg
+function drawTreemap(json, W, H) {
+  svg.selectAll("*").remove();
+  svg.attr("width", W).attr("height", H);
+  
+  const root = buildHierarchy(json.data);
+  d3.treemap().size([W, H]).paddingOuter(4).paddingTop(22).paddingInner(2).round(true)(root);
+  
+  // group headers
+  const parents = svg.selectAll(".parent").data(root.children || []).enter().append("g");
+  parents.append("text").attr("class", "parent-label").attr("x", d=>d.x0+4).attr("y", d=>d.y0+14).text(d=>d.data.name);
+  
+  // actual squares
+  const nodes = svg.selectAll(".node").data(root.leaves()).enter().append("g").attr("class", "node").attr("transform", d=>`translate(${d.x0},${d.y0})`);
+  
+  nodes.append("rect")
+    .attr("width", d=>Math.max(0, d.x1-d.x0))
+    .attr("height", d=>Math.max(0, d.y1-d.y0))
+    .attr("rx", 3)
+    .attr("fill", d=>color(d.parent.data.name !== "Total" ? d.parent.data.name : d.data.name))
+    .on("mouseover", (e, d) => showTT(e, d.data.name, d.value, d.parent ? d.parent.data.name : ""))
+    .on("mousemove", moveTT).on("mouseout", hideTT);
+
+  // labels inside squares
+  nodes.each(function(d){
+    const w = d.x1-d.x0, h = d.y1-d.y0, el = d3.select(this);
+    if(w>45 && h>25) el.append("text").attr("x",8).attr("y",18).style("font-size","12px").style("font-weight","600").style("fill","#fff").text(d.data.name);
+    if(w>60 && h>40) el.append("text").attr("x",8).attr("y",34).style("font-size","10px").style("fill","rgba(255,255,255,0.8)").text(d.value.toFixed(1));
+  });
+
+  exportToCanvas(json.config, root, W, H);
+}
+
+// screenshot logic for rhino
+function exportToCanvas(config, root, W, H) {
+  const exportW = config.w || 500;
+  const scale = exportW / W;
+  const headH = 70 * scale, pad = 20 * scale;
+  const vpH = Math.round(H * scale) + headH + pad;
+  
+  const canvas = document.createElement('canvas');
+  canvas.width = exportW; canvas.height = vpH;
+  const ctx = canvas.getContext('2d');
+
+  // background and titles
+  ctx.fillStyle = '#fff'; ctx.fillRect(0,0,exportW,vpH);
+  ctx.fillStyle = '#111'; ctx.font = `bold ${18*scale}px sans-serif`; ctx.fillText(config.title, 15*scale, 25*scale);
+  ctx.fillStyle = '#666'; ctx.font = `${13*scale}px sans-serif`; ctx.fillText(config.subtitle, 15*scale, 45*scale);
+
+  // shift for chart area
+  ctx.translate(pad/2, headH + pad/2);
+  const drawW = exportW - pad, drawH = vpH - headH - pad;
+  
+  // re-run layout for canvas size
+  d3.treemap().size([drawW, drawH]).paddingOuter(4*scale).paddingTop(22*scale).paddingInner(2*scale).round(true)(root);
+
+  // draw groups
+  root.children?.forEach(d => { 
+    ctx.fillStyle = '#555'; ctx.font = `bold ${11*scale}px sans-serif`; 
+    ctx.fillText(d.data.name.toUpperCase(), d.x0+4*scale, d.y0+14*scale); 
+  });
+
+  // draw leaves
+  root.leaves().forEach(d => {
+    const w = d.x1-d.x0, h = d.y1-d.y0;
+    ctx.fillStyle = color(d.parent.data.name !== "Total" ? d.parent.data.name : d.data.name);
+    ctx.beginPath(); ctx.roundRect(d.x0, d.y0, w, h, 3*scale); ctx.fill();
+    ctx.strokeStyle = '#fff'; ctx.lineWidth = 2*scale; ctx.stroke();
+    
+    if(w > 45*scale && h > 25*scale) {
+      ctx.fillStyle = '#fff'; ctx.font = `bold ${12*scale}px sans-serif`; 
+      ctx.fillText(d.data.name, d.x0+6*scale, d.y0+16*scale);
+    }
+  });
+
+  // send to rhino server
+  canvas.toBlob(b => fetch('/screenshot', { method: 'POST', body: b }).catch(()=>{}));
+}
+
+// start polling
+poll();
+setInterval(poll, POLL_MS);
+</script>
 </body>
 </html>

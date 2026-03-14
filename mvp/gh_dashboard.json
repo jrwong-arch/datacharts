@@ -1,1 +1,86 @@
-{"message": "HELLO HACK"}
+{
+  "updated": "2026-03-14 16:43:52",
+  "config": {
+    "type": "treemap",
+    "title": "Grasshopper Dashboard",
+    "subtitle": "Live Data Feed",
+    "w": 793
+  },
+  "data": [
+    {
+      "name": "A",
+      "value": 102526.69340307225,
+      "parent": "Residential"
+    },
+    {
+      "name": "B",
+      "value": 21586.666003523096,
+      "parent": "Commercial"
+    },
+    {
+      "name": "C",
+      "value": 104140.07670573267,
+      "parent": "Industrial"
+    },
+    {
+      "name": "D",
+      "value": 209030.12626746233,
+      "parent": "Residential"
+    },
+    {
+      "name": "E",
+      "value": 8777.631451937199,
+      "parent": "Commercial"
+    },
+    {
+      "name": "F",
+      "value": 25675.54952222466,
+      "parent": "Industrial"
+    },
+    {
+      "name": "G",
+      "value": 170536.5756425672,
+      "parent": "Residential"
+    },
+    {
+      "name": "H",
+      "value": 15936.284787619055,
+      "parent": "Commercial"
+    },
+    {
+      "name": "I",
+      "value": 367680.5923639412,
+      "parent": "Industrial"
+    },
+    {
+      "name": "J",
+      "value": 2871.8369873140073,
+      "parent": "Residential"
+    },
+    {
+      "name": "K",
+      "value": 8400.443011453157,
+      "parent": "Commercial"
+    },
+    {
+      "name": "L",
+      "value": 3303.3512930802563,
+      "parent": "Industrial"
+    },
+    {
+      "name": "M",
+      "value": 1053961.599947311,
+      "parent": "Residential"
+    },
+    {
+      "name": "N",
+      "value": 153284.13847461654,
+      "parent": "Commercial"
+    },
+    {
+      "name": "O",
+      "value": 796498.7300626063,
+      "parent": "Industrial"
+    }
+  ]
+}
