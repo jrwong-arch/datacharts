@@ -1,65 +1,84 @@
 # Rhino 8 Web Graph Prototype
 
-Minimal Rhino 8 Python setup that opens an Eto popup with a `WebView` to preview chart URLs and a local animated D3 treemap fed by dynamic JSON.
+Rhino + Eto + Grasshopper workflow for live D3 chart visualization in an embedded web view.
 
-## Project structure
+## Folder overview
 
-- `scripts/ui_popup.py` - Eto dialog UI with two modes:
-  - **Flourish URL** mode (paste/load an embed URL)
-  - **Animated Treemap (local server)** mode (loads `http://127.0.0.1:8765/tree_map/animated_treemap.html`)
-- `scripts/run_button.py` - simple launch script intended for a Rhino toolbar button.
-- `scripts/run_button_animated.py` - launcher that opens directly in local animated treemap mode and auto-starts `scripts/local_server.py` if needed.
-- `scripts/local_server.py` - local HTTP server that:
-  - serves project files from repo root
-  - exposes `POST /update` to receive JSON updates
-  - stores latest data in `tree_map/data.json`
-- `tree_map/data.json` - current treemap dataset consumed by `tree_map/animated_treemap.html`
+- `grasshopper/`
+  - Grasshopper-side files and data exports while preparing payloads.
+  - Optional at runtime; live app reads `tree_map/data.json`.
+- `scripts/`
+  - Rhino Python entry points and server logic.
+  - `run_button_animated.py` opens local chart mode and auto-starts server.
+  - `ui_popup.py` creates Eto UI and embeds `Eto.Forms.WebView`.
+  - `local_server.py` serves files and handles `POST /update`.
+- `tree_map/`
+  - Frontend assets used by Eto WebView.
+  - `animated_treemap.html` contains D3 chart renderers and chart switching.
+  - `data.json` is the active live payload file.
 
-## Requirements
+## Three layers that work together
 
-- Rhino 8
-- RhinoCode CPython (Python 3) runtime
-- Public chart URL that allows embedding (Flourish embed links are a common starting point)
+1. **UI layer (Rhino + Eto)**
+   - Rhino button opens `ui_popup.py`.
+   - Popup uses `Eto.Forms.WebView` to load:
+     - external URL mode, or
+     - local chart mode (`http://127.0.0.1:8765/tree_map/animated_treemap.html`).
 
-## Run from Rhino command line
+2. **Web layer (HTML + D3)**
+   - `tree_map/animated_treemap.html` fetches `tree_map/data.json` every ~700ms.
+   - It routes rendering by `GraphName`:
+     - `GraphName.TREEMAP`
+     - `GraphName.BAR_GRAPH`
+     - `GraphName.PIE`
+     - `GraphName.CIRCLE_PACKING`
 
-Use:
+3. **Data layer (Grasshopper + local server)**
+   - Grasshopper builds payload and sends to `POST /update`.
+   - `scripts/local_server.py` normalizes payload and writes `tree_map/data.json`.
+   - Web layer detects changes and re-renders.
 
-`_-RunPythonScript "C:\Users\Matea.Pinjusic\Documents\datacharts\scripts\run_button.py"`
+## Workflow
 
-You can also assign the same command to a Rhino toolbar button.
-
-For direct local animated treemap mode:
-
-`_-RunPythonScript "C:\Users\Matea.Pinjusic\Documents\datacharts\scripts\run_button_animated.py"`
-
-Start local server (required for animated mode dynamic data):
-
-`python "C:\Users\Matea.Pinjusic\Documents\datacharts\scripts\local_server.py"`
-
-## Usage
-
-1. Run `run_button.py` from Rhino.
-2. Choose mode:
-   - **Flourish URL** for external embed links
-   - **Animated Treemap (local server)** to load `http://127.0.0.1:8765/tree_map/animated_treemap.html`
-3. In URL mode, paste your chart URL into the textbox.
-4. Click **Load URL** (or **Load Treemap** in local mode).
-5. Click **Reload** if you update data on the server side.
-
-## Grasshopper -> Treemap live flow
-
-1. Start `scripts/local_server.py`.
-2. In Grasshopper, compute treemap JSON rows as a list of objects:
-   - `{ "name": "...", "parent": "...", "value": 123 }`
-3. Keep the previous payload hash in `scriptcontext.sticky`.
-4. Only when changed, `POST` the JSON list to:
+1. Run:
+   - `_-RunPythonScript "C:\Users\Matea.Pinjusic\Documents\datacharts\scripts\run_button_animated.py"`
+2. `run_button_animated.py` checks server health and starts `local_server.py` if needed.
+3. Eto popup opens Local mode and loads `animated_treemap.html`.
+4. Grasshopper sends payload updates to:
    - `http://127.0.0.1:8765/update`
-5. `animated_treemap.html` polls `tree_map/data.json` every ~700ms and re-renders when data changes.
+5. Server writes latest payload to:
+   - `tree_map/data.json`
+6. HTML polls `tree_map/data.json`, compares hash, and re-renders when changed.
 
-## Notes
+### Expected payload
 
-- Use an actual embed URL, not an editor/share page URL.
-- Some websites block embedding via CSP or `X-Frame-Options`; if so, the page may not render inside `WebView`.
-- `ui_popup.py` includes a placeholder custom-scheme bridge (`myapp://...`) for JS -> Rhino messages.
-- `run_button.py` explicitly checks for CPython and stops with a clear message in IronPython.
+```json
+{
+  "GraphName": "GraphName.TREEMAP",
+  "data": [
+    { "name": "A", "parent": "Group", "value": 100 },
+    { "name": "B", "parent": "Group", "value": 60 }
+  ]
+}
+```
+
+### Workflow diagram
+
+```mermaid
+flowchart LR
+    A[Rhino button run_button_animated.py] --> B[Eto popup + Eto.WebView]
+    A --> C[local_server.py]
+    B --> D["GET /tree_map/animated_treemap.html"]
+    E[Grasshopper] --> F[Build payload GraphName + data]
+    F --> G["POST /update"]
+    G --> C
+    C --> H[tree_map/data.json]
+    D --> I[D3 router in animated_treemap.html]
+    I --> J["Poll /tree_map/data.json"]
+    J --> H
+    I --> K{GraphName}
+    K --> L[Treemap]
+    K --> M[Bar]
+    K --> N[Pie]
+    K --> O[Circle packing]
+```

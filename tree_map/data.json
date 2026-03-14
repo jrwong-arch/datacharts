@@ -1,32 +1,310 @@
-[
-  {
-    "name": "Living",
-    "parent": "Indoor",
-    "value": 75
-  },
-  {
-    "name": "Kitchen",
-    "parent": "Indoor",
-    "value": 166
-  },
-  {
-    "name": "Bedroom",
-    "parent": "Terrace",
-    "value": 154
-  },
-  {
-    "name": "Deck",
-    "parent": "Outdoor",
-    "value": 48
-  },
-  {
-    "name": "Garden",
-    "parent": "Outdoor",
-    "value": 109
-  },
-  {
-    "name": "Pool",
-    "parent": "Outdoor",
-    "value": 249
-  }
-]
+{
+  "GraphName": "GraphName.TREEMAP",
+  "data": [
+    {
+      "name": "0",
+      "parent": "Retail",
+      "value": 663.0
+    },
+    {
+      "name": "1",
+      "parent": "Retail",
+      "value": 665.0
+    },
+    {
+      "name": "2",
+      "parent": "Retail",
+      "value": 668.0
+    },
+    {
+      "name": "3",
+      "parent": "Retail",
+      "value": 670.0
+    },
+    {
+      "name": "4",
+      "parent": "Retail",
+      "value": 673.0
+    },
+    {
+      "name": "5",
+      "parent": "Retail",
+      "value": 675.0
+    },
+    {
+      "name": "6",
+      "parent": "Retail",
+      "value": 678.0
+    },
+    {
+      "name": "7",
+      "parent": "Retail",
+      "value": 680.0
+    },
+    {
+      "name": "8",
+      "parent": "Retail",
+      "value": 682.0
+    },
+    {
+      "name": "9",
+      "parent": "Retail",
+      "value": 685.0
+    },
+    {
+      "name": "10",
+      "parent": "Retail",
+      "value": 687.0
+    },
+    {
+      "name": "11",
+      "parent": "Retail",
+      "value": 690.0
+    },
+    {
+      "name": "12",
+      "parent": "Retail",
+      "value": 692.0
+    },
+    {
+      "name": "13",
+      "parent": "Retail",
+      "value": 694.0
+    },
+    {
+      "name": "14",
+      "parent": "Retail",
+      "value": 696.0
+    },
+    {
+      "name": "15",
+      "parent": "Retail",
+      "value": 699.0
+    },
+    {
+      "name": "16",
+      "parent": "Retail",
+      "value": 701.0
+    },
+    {
+      "name": "17",
+      "parent": "Retail",
+      "value": 703.0
+    },
+    {
+      "name": "18",
+      "parent": "Retail",
+      "value": 705.0
+    },
+    {
+      "name": "19",
+      "parent": "Retail",
+      "value": 707.0
+    },
+    {
+      "name": "20",
+      "parent": "Retail",
+      "value": 709.0
+    },
+    {
+      "name": "21",
+      "parent": "Retail",
+      "value": 711.0
+    },
+    {
+      "name": "22",
+      "parent": "Office",
+      "value": 712.0
+    },
+    {
+      "name": "23",
+      "parent": "Office",
+      "value": 714.0
+    },
+    {
+      "name": "24",
+      "parent": "Office",
+      "value": 715.0
+    },
+    {
+      "name": "25",
+      "parent": "Office",
+      "value": 716.0
+    },
+    {
+      "name": "26",
+      "parent": "Office",
+      "value": 717.0
+    },
+    {
+      "name": "27",
+      "parent": "Office",
+      "value": 718.0
+    },
+    {
+      "name": "28",
+      "parent": "Office",
+      "value": 718.0
+    },
+    {
+      "name": "29",
+      "parent": "Office",
+      "value": 718.0
+    },
+    {
+      "name": "30",
+      "parent": "Office",
+      "value": 718.0
+    },
+    {
+      "name": "31",
+      "parent": "Office",
+      "value": 717.0
+    },
+    {
+      "name": "32",
+      "parent": "Office",
+      "value": 716.0
+    },
+    {
+      "name": "33",
+      "parent": "Office",
+      "value": 714.0
+    },
+    {
+      "name": "34",
+      "parent": "Office",
+      "value": 712.0
+    },
+    {
+      "name": "35",
+      "parent": "Office",
+      "value": 708.0
+    },
+    {
+      "name": "36",
+      "parent": "Office",
+      "value": 704.0
+    },
+    {
+      "name": "37",
+      "parent": "Office",
+      "value": 698.0
+    },
+    {
+      "name": "38",
+      "parent": "Hospitality",
+      "value": 692.0
+    },
+    {
+      "name": "39",
+      "parent": "Hospitality",
+      "value": 684.0
+    },
+    {
+      "name": "40",
+      "parent": "Hospitality",
+      "value": 674.0
+    },
+    {
+      "name": "41",
+      "parent": "Hospitality",
+      "value": 664.0
+    },
+    {
+      "name": "42",
+      "parent": "Hospitality",
+      "value": 652.0
+    },
+    {
+      "name": "43",
+      "parent": "Hospitality",
+      "value": 638.0
+    },
+    {
+      "name": "44",
+      "parent": "Hospitality",
+      "value": 624.0
+    },
+    {
+      "name": "45",
+      "parent": "Hospitality",
+      "value": 608.0
+    },
+    {
+      "name": "46",
+      "parent": "Hospitality",
+      "value": 592.0
+    },
+    {
+      "name": "47",
+      "parent": "Hospitality",
+      "value": 576.0
+    },
+    {
+      "name": "48",
+      "parent": "Hospitality",
+      "value": 559.0
+    },
+    {
+      "name": "49",
+      "parent": "Hospitality",
+      "value": 542.0
+    },
+    {
+      "name": "50",
+      "parent": "Retai",
+      "value": 526.0
+    },
+    {
+      "name": "51",
+      "parent": "Retai",
+      "value": 509.0
+    },
+    {
+      "name": "52",
+      "parent": "Retai",
+      "value": 493.0
+    },
+    {
+      "name": "53",
+      "parent": "Retai",
+      "value": 477.0
+    },
+    {
+      "name": "54",
+      "parent": "Retai",
+      "value": 462.0
+    },
+    {
+      "name": "55",
+      "parent": "Retai",
+      "value": 446.0
+    },
+    {
+      "name": "56",
+      "parent": "Retai",
+      "value": 432.0
+    },
+    {
+      "name": "57",
+      "parent": "Retai",
+      "value": 417.0
+    },
+    {
+      "name": "58",
+      "parent": "Retai",
+      "value": 403.0
+    },
+    {
+      "name": "59",
+      "parent": "Retai",
+      "value": 390.0
+    },
+    {
+      "name": "60",
+      "parent": "Retai",
+      "value": 377.0
+    }
+  ]
+}

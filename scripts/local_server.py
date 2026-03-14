@@ -10,8 +10,9 @@ PORT = 8765
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 TREEMAP_DIR = os.path.join(PROJECT_ROOT, "tree_map")
 DATA_PATH = os.path.join(TREEMAP_DIR, "data.json")
+DEFAULT_GRAPH = "GraphName.TREEMAP"
 
-DEFAULT_DATA = [
+DEFAULT_DATA_ROWS = [
     {"name": "Living", "parent": "Indoor", "value": 222},
     {"name": "Kitchen", "parent": "Indoor", "value": 150},
     {"name": "Bedroom", "parent": "Terrace", "value": 250},
@@ -19,6 +20,7 @@ DEFAULT_DATA = [
     {"name": "Garden", "parent": "Outdoor", "value": 150},
     {"name": "Pool", "parent": "Outdoor", "value": 15},
 ]
+DEFAULT_DATA = {"GraphName": DEFAULT_GRAPH, "data": DEFAULT_DATA_ROWS}
 
 
 def ensure_data_file():
@@ -39,10 +41,40 @@ def write_json_atomic(path, payload):
 
 
 def normalize_payload(payload):
-    """Accept common GH payload shapes and return list[dict]."""
-    # If GH sends already-correct list of row dicts.
+    """Accept common GH payload shapes and return canonical chart payload."""
+
+    def normalize_rows(rows):
+        if not isinstance(rows, list):
+            raise ValueError("Expected data rows as a list.")
+        cleaned = []
+        for item in rows:
+            if not isinstance(item, dict):
+                continue
+            name = str(item.get("name", "")).strip()
+            if not name:
+                continue
+            parent = str(item.get("parent", "Total")).strip() or "Total"
+            try:
+                value = float(item.get("value", 0))
+            except Exception:
+                value = 0.0
+            cleaned.append({"name": name, "parent": parent, "value": value})
+        if not cleaned:
+            raise ValueError("No valid rows in payload.")
+        return cleaned
+
+    def normalize_graph_name(value):
+        text = str(value or DEFAULT_GRAPH).strip()
+        return text or DEFAULT_GRAPH
+
+    # If GH sends list of row dicts or [graph-meta, rows...].
     if isinstance(payload, list) and all(isinstance(item, dict) for item in payload):
-        return payload
+        graph_name = DEFAULT_GRAPH
+        rows = payload
+        if payload and "GraphName" in payload[0] and "name" not in payload[0]:
+            graph_name = normalize_graph_name(payload[0].get("GraphName"))
+            rows = payload[1:]
+        return {"GraphName": graph_name, "data": normalize_rows(rows)}
 
     # If GH sends ["<json string>"] (double-encoded list).
     if (
@@ -52,24 +84,22 @@ def normalize_payload(payload):
         and payload[0].strip()
     ):
         decoded = json.loads(payload[0])
-        if isinstance(decoded, list) and all(isinstance(item, dict) for item in decoded):
-            return decoded
+        return normalize_payload(decoded)
 
     # If GH sends raw JSON string.
     if isinstance(payload, str) and payload.strip():
         decoded = json.loads(payload)
-        if isinstance(decoded, list) and all(isinstance(item, dict) for item in decoded):
-            return decoded
+        return normalize_payload(decoded)
 
     # If GH sends object wrapper like {"data":[...]}.
     if isinstance(payload, dict) and isinstance(payload.get("data"), list):
-        rows = payload["data"]
-        if all(isinstance(item, dict) for item in rows):
-            return rows
+        graph_name = normalize_graph_name(payload.get("GraphName"))
+        rows = normalize_rows(payload["data"])
+        return {"GraphName": graph_name, "data": rows}
 
     raise ValueError(
-        "Expected list of objects with name/parent/value. "
-        "Also supported: stringified list, ['stringified list'], or {'data':[...]}."
+        "Expected list rows or {'GraphName':..., 'data':[...]} payload. "
+        "Also supported: stringified JSON payload variants."
     )
 
 
