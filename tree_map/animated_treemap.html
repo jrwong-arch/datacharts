@@ -140,12 +140,19 @@ function buildHierarchy(data) {
     .sum(d => d.value).sort((a,b) => b.value - a.value);
 }
 
-function aggregateByName(rows) {
+function aggregateByNameParent(rows) {
   return d3.rollups(
     rows,
     values => d3.sum(values, d => d.value),
-    d => d.name
-  ).map(([name, value]) => ({ name, value }));
+    d => `${d.name}||${d.parent}`
+  ).map(([key, value]) => {
+    const parts = key.split("||");
+    return {
+      name: parts[0] || "",
+      parent: parts[1] || "Total",
+      value
+    };
+  });
 }
 
 function setHeader(graphName) {
@@ -232,7 +239,7 @@ function renderBar(data) {
   const margin = { top: 20, right: 20, bottom: 50, left: 56 };
   const innerW = Math.max(50, W - margin.left - margin.right);
   const innerH = Math.max(50, H - margin.top - margin.bottom);
-  const chartData = aggregateByName(data);
+  const chartData = aggregateByNameParent(data);
 
   const x = d3.scaleBand().domain(chartData.map(d => d.name)).range([0, innerW]).padding(0.2);
   const y = d3.scaleLinear().domain([0, d3.max(chartData, d => d.value) || 1]).nice().range([innerH, 0]);
@@ -253,8 +260,8 @@ function renderBar(data) {
     .attr("y", innerH)
     .attr("width", x.bandwidth())
     .attr("height", 0)
-    .attr("fill", d => color(d.name))
-    .on("mouseover", (e, d) => showTT(e, d.name, d.value, "Category"))
+    .attr("fill", d => color(d.parent))
+    .on("mouseover", (e, d) => showTT(e, d.name, d.value, d.parent))
     .on("mousemove", moveTT)
     .on("mouseout", hideTT)
     .transition()
@@ -271,7 +278,7 @@ function renderPie(data) {
 
   svg.attr("width", W).attr("height", H);
   const radius = Math.min(W, H) * 0.35;
-  const chartData = aggregateByName(data);
+  const chartData = aggregateByNameParent(data);
   const pie = d3.pie().sort(null).value(d => d.value)(chartData);
   const arc = d3.arc().innerRadius(0).outerRadius(radius);
   const labelArc = d3.arc().innerRadius(radius * 0.65).outerRadius(radius * 0.65);
@@ -280,10 +287,10 @@ function renderPie(data) {
   g.selectAll("path")
     .data(pie)
     .join("path")
-    .attr("fill", d => color(d.data.name))
+    .attr("fill", d => color(d.data.parent))
     .attr("stroke", "#fff")
     .attr("stroke-width", 2)
-    .on("mouseover", (e, d) => showTT(e, d.data.name, d.data.value, "Category"))
+    .on("mouseover", (e, d) => showTT(e, d.data.name, d.data.value, d.data.parent))
     .on("mousemove", moveTT)
     .on("mouseout", hideTT)
     .transition()
