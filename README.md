@@ -8,7 +8,7 @@ Minimal Rhino 8 Python setup that opens an Eto popup with a `WebView` to preview
   - **Flourish URL** mode (paste/load an embed URL)
   - **Animated Treemap (local server)** mode (loads `http://127.0.0.1:8765/tree_map/animated_treemap.html`)
 - `scripts/run_button.py` - simple launch script intended for a Rhino toolbar button.
-- `scripts/run_button_animated.py` - launcher that opens directly in local animated treemap mode.
+- `scripts/run_button_animated.py` - launcher that opens directly in local animated treemap mode and auto-starts `scripts/local_server.py` if needed.
 - `scripts/local_server.py` - local HTTP server that:
   - serves project files from repo root
   - exposes `POST /update` to receive JSON updates
