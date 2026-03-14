@@ -7,8 +7,8 @@ import Eto.Forms as forms
 import Eto.Drawing as drawing
 
 DEFAULT_URL = "https://public.flourish.studio/visualisation/28056071/"
-MODE_URL = "Flourish URL"
-MODE_ANIMATED = "Animated Treemap (local server)"
+MODE_URL = "URL"
+MODE_ANIMATED = "Local"
 LOCAL_SERVER_TREEMAP_URL = "http://127.0.0.1:8765/tree_map/animated_treemap.html"
 _DIALOG = None
 
