@@ -1,0 +1,185 @@
+{
+  "GraphName": "GraphName.BAR_GRAPH",
+  "data": [
+    {
+      "name": "L0",
+      "parent": "Retail",
+      "value": 727.0
+    },
+    {
+      "name": "L1",
+      "parent": "Retail",
+      "value": 729.0
+    },
+    {
+      "name": "L2",
+      "parent": "Retail",
+      "value": 731.0
+    },
+    {
+      "name": "L3",
+      "parent": "Retail",
+      "value": 733.0
+    },
+    {
+      "name": "L4",
+      "parent": "Retail",
+      "value": 735.0
+    },
+    {
+      "name": "L5",
+      "parent": "Retail",
+      "value": 736.0
+    },
+    {
+      "name": "L6",
+      "parent": "Office",
+      "value": 738.0
+    },
+    {
+      "name": "L7",
+      "parent": "Office",
+      "value": 740.0
+    },
+    {
+      "name": "L8",
+      "parent": "Office",
+      "value": 742.0
+    },
+    {
+      "name": "L9",
+      "parent": "Office",
+      "value": 744.0
+    },
+    {
+      "name": "L10",
+      "parent": "Office",
+      "value": 745.0
+    },
+    {
+      "name": "L11",
+      "parent": "Office",
+      "value": 747.0
+    },
+    {
+      "name": "L12",
+      "parent": "Office",
+      "value": 748.0
+    },
+    {
+      "name": "L13",
+      "parent": "Office",
+      "value": 750.0
+    },
+    {
+      "name": "L14",
+      "parent": "Office",
+      "value": 751.0
+    },
+    {
+      "name": "L15",
+      "parent": "Office",
+      "value": 752.0
+    },
+    {
+      "name": "L16",
+      "parent": "Office",
+      "value": 752.0
+    },
+    {
+      "name": "L17",
+      "parent": "Office",
+      "value": 752.0
+    },
+    {
+      "name": "L18",
+      "parent": "Office",
+      "value": 752.0
+    },
+    {
+      "name": "L19",
+      "parent": "Office",
+      "value": 751.0
+    },
+    {
+      "name": "L20",
+      "parent": "Hospitality",
+      "value": 749.0
+    },
+    {
+      "name": "L21",
+      "parent": "Hospitality",
+      "value": 746.0
+    },
+    {
+      "name": "L22",
+      "parent": "Hospitality",
+      "value": 741.0
+    },
+    {
+      "name": "L23",
+      "parent": "Hospitality",
+      "value": 735.0
+    },
+    {
+      "name": "L24",
+      "parent": "Hospitality",
+      "value": 726.0
+    },
+    {
+      "name": "L25",
+      "parent": "Hospitality",
+      "value": 716.0
+    },
+    {
+      "name": "L26",
+      "parent": "Hospitality",
+      "value": 704.0
+    },
+    {
+      "name": "L27",
+      "parent": "Hospitality",
+      "value": 691.0
+    },
+    {
+      "name": "L28",
+      "parent": "Hospitality",
+      "value": 678.0
+    },
+    {
+      "name": "L29",
+      "parent": "Residential",
+      "value": 664.0
+    },
+    {
+      "name": "L30",
+      "parent": "Residential",
+      "value": 650.0
+    },
+    {
+      "name": "L31",
+      "parent": "Residential",
+      "value": 636.0
+    },
+    {
+      "name": "L32",
+      "parent": "Residential",
+      "value": 622.0
+    },
+    {
+      "name": "L33",
+      "parent": "Residential",
+      "value": 609.0
+    },
+    {
+      "name": "L34",
+      "parent": "Residential",
+      "value": 596.0
+    },
+    {
+      "name": "L35",
+      "parent": "Residential",
+      "value": 584.0
+    }
+  ]
+}

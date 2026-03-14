@@ -46,18 +46,26 @@
 <div id="tooltip"></div>
 
 <script>
-const sampleData = [
+const FALLBACK_DATA = [
   { name: "Living", parent: "Indoor", value: 222 },
-  { name: "Kitchen", parent: "Indoor", value: 350 },
-  { name: "Bedroom", parent: "Terrace", value: 200 },
+  { name: "Kitchen", parent: "Indoor", value: 150 },
+  { name: "Bedroom", parent: "Terrace", value: 250 },
   { name: "Deck", parent: "Outdoor", value: 200 },
-  { name: "Garden", parent: "Outdoor", value: 200 },
+  { name: "Garden", parent: "Outdoor", value: 150 },
   { name: "Pool", parent: "Outdoor", value: 15 }
 ];
 
 const color = d3.scaleOrdinal(d3.schemeTableau10);
 const svg = d3.select("#chart");
 const tooltip = d3.select("#tooltip");
+const title = document.getElementById("title");
+const subtitle = document.getElementById("subtitle");
+const DATA_URL = "/tree_map/data.json";
+const POLL_MS = 700;
+const DEFAULT_GRAPH = "GraphName.TREEMAP";
+
+let latestPayload = { GraphName: DEFAULT_GRAPH, data: FALLBACK_DATA };
+let lastRenderedHash = "";
 
 function showTT(e, name, val, group) {
   tooltip.style("opacity", 1)
@@ -68,6 +76,57 @@ function moveTT(e) {
   tooltip.style("left", (e.pageX + 15) + "px").style("top", (e.pageY - 15) + "px");
 }
 function hideTT() { tooltip.style("opacity", 0); }
+
+function normalizeGraphName(value) {
+  const raw = String(value || DEFAULT_GRAPH).trim().toUpperCase();
+  if (raw.includes("BAR_GRAPH")) return "GraphName.BAR_GRAPH";
+  if (raw.includes("PIE")) return "GraphName.PIE";
+  if (raw.includes("CIRCLE_PACKING")) return "GraphName.CIRCLE_PACKING";
+  return "GraphName.TREEMAP";
+}
+
+function clearChart() {
+  svg.selectAll("*").remove();
+}
+
+function normalizeRows(rows) {
+  if (!Array.isArray(rows)) return [];
+  return rows
+    .map(row => ({
+      name: String(row.name || "").trim(),
+      parent: String(row.parent || "Total").trim() || "Total",
+      value: Number(row.value) || 0
+    }))
+    .filter(row => row.name.length > 0);
+}
+
+function parsePayload(raw) {
+  if (Array.isArray(raw)) {
+    // Backward compatible format: [{GraphName: ...}, ...rows]
+    let graphName = DEFAULT_GRAPH;
+    let rows = raw;
+    if (raw.length && raw[0] && raw[0].GraphName && !raw[0].name) {
+      graphName = normalizeGraphName(raw[0].GraphName);
+      rows = raw.slice(1);
+    }
+    rows = normalizeRows(rows);
+    return {
+      GraphName: graphName,
+      data: rows.length ? rows : FALLBACK_DATA
+    };
+  }
+
+  if (raw && typeof raw === "object") {
+    const graphName = normalizeGraphName(raw.GraphName);
+    const rows = normalizeRows(raw.data);
+    return {
+      GraphName: graphName,
+      data: rows.length ? rows : FALLBACK_DATA
+    };
+  }
+
+  return { GraphName: DEFAULT_GRAPH, data: FALLBACK_DATA };
+}
 
 function buildHierarchy(data) {
   const childNames = new Set(data.map(d => d.name));
@@ -81,17 +140,42 @@ function buildHierarchy(data) {
     .sum(d => d.value).sort((a,b) => b.value - a.value);
 }
 
-function render() {
+function aggregateByNameParent(rows) {
+  return d3.rollups(
+    rows,
+    values => d3.sum(values, d => d.value),
+    d => `${d.name}||${d.parent}`
+  ).map(([key, value]) => {
+    const parts = key.split("||");
+    return {
+      name: parts[0] || "",
+      parent: parts[1] || "Total",
+      value
+    };
+  });
+}
+
+function setHeader(graphName) {
+  const mapping = {
+    "GraphName.TREEMAP": "Animated Treemap",
+    "GraphName.BAR_GRAPH": "Bar Chart",
+    "GraphName.PIE": "Pie Chart",
+    "GraphName.CIRCLE_PACKING": "Circle Packing"
+  };
+  title.textContent = mapping[graphName] || "Chart";
+}
+
+function renderTreemap(data) {
+  clearChart();
   const W = document.getElementById("chart-wrap").clientWidth;
   const H = document.getElementById("chart-wrap").clientHeight;
-  if (W === 0 || H === 0) return; // Prevent errors if container isn't ready
-  
+  if (W === 0 || H === 0) return;
+
   svg.attr("width", W).attr("height", H);
 
-  const root = buildHierarchy(sampleData);
+  const root = buildHierarchy(data);
   d3.treemap().size([W, H]).paddingOuter(4).paddingTop(22).paddingInner(2).round(true)(root);
 
-  // adding labels to parents / hierarchal
   svg.selectAll(".parent-label")
     .data(root.children || [])
     .join("text")
@@ -100,7 +184,6 @@ function render() {
     .attr("y", d => d.y0 + 14)
     .text(d => d.data.name);
 
-  // leaf nodes
   const leaves = svg.selectAll(".node")
     .data(root.leaves(), d => d.data.name)
     .join(
@@ -111,11 +194,9 @@ function render() {
       }
     );
 
-  // animate position 
   leaves.transition().duration(1000).ease(d3.easeCubicOut)
     .attr("transform", d => `translate(${d.x0},${d.y0})`);
 
-  // updated leaves
   leaves.select("rect")
     .attr("fill", d => color(d.parent.data.name))
     .on("mouseover", (e, d) => showTT(e, d.data.name, d.value, d.parent.data.name))
@@ -125,7 +206,6 @@ function render() {
     .attr("width", d => Math.max(0, d.x1 - d.x0))
     .attr("height", d => Math.max(0, d.y1 - d.y0));
 
-  // iside the leaf internal Labels
   leaves.each(function(d) {
     const g = d3.select(this);
     const w = d.x1 - d.x0;
@@ -149,8 +229,173 @@ function render() {
   });
 }
 
-render();
-window.addEventListener("resize", render);
+function renderBar(data) {
+  clearChart();
+  const W = document.getElementById("chart-wrap").clientWidth;
+  const H = document.getElementById("chart-wrap").clientHeight;
+  if (W === 0 || H === 0) return;
+
+  svg.attr("width", W).attr("height", H);
+  const margin = { top: 20, right: 20, bottom: 50, left: 56 };
+  const innerW = Math.max(50, W - margin.left - margin.right);
+  const innerH = Math.max(50, H - margin.top - margin.bottom);
+  const chartData = aggregateByNameParent(data);
+
+  const x = d3.scaleBand().domain(chartData.map(d => d.name)).range([0, innerW]).padding(0.2);
+  const y = d3.scaleLinear().domain([0, d3.max(chartData, d => d.value) || 1]).nice().range([innerH, 0]);
+
+  const g = svg.append("g").attr("transform", `translate(${margin.left},${margin.top})`);
+  g.append("g")
+    .attr("transform", `translate(0,${innerH})`)
+    .call(d3.axisBottom(x))
+    .selectAll("text")
+    .attr("transform", "rotate(-25)")
+    .style("text-anchor", "end");
+  g.append("g").call(d3.axisLeft(y));
+
+  g.selectAll("rect")
+    .data(chartData)
+    .join("rect")
+    .attr("x", d => x(d.name))
+    .attr("y", innerH)
+    .attr("width", x.bandwidth())
+    .attr("height", 0)
+    .attr("fill", d => color(d.parent))
+    .on("mouseover", (e, d) => showTT(e, d.name, d.value, d.parent))
+    .on("mousemove", moveTT)
+    .on("mouseout", hideTT)
+    .transition()
+    .duration(700)
+    .attr("y", d => y(d.value))
+    .attr("height", d => innerH - y(d.value));
+}
+
+function renderPie(data) {
+  clearChart();
+  const W = document.getElementById("chart-wrap").clientWidth;
+  const H = document.getElementById("chart-wrap").clientHeight;
+  if (W === 0 || H === 0) return;
+
+  svg.attr("width", W).attr("height", H);
+  const radius = Math.min(W, H) * 0.35;
+  const chartData = aggregateByNameParent(data);
+  const pie = d3.pie().sort(null).value(d => d.value)(chartData);
+  const arc = d3.arc().innerRadius(0).outerRadius(radius);
+  const labelArc = d3.arc().innerRadius(radius * 0.65).outerRadius(radius * 0.65);
+
+  const g = svg.append("g").attr("transform", `translate(${W / 2},${H / 2})`);
+  g.selectAll("path")
+    .data(pie)
+    .join("path")
+    .attr("fill", d => color(d.data.parent))
+    .attr("stroke", "#fff")
+    .attr("stroke-width", 2)
+    .on("mouseover", (e, d) => showTT(e, d.data.name, d.data.value, d.data.parent))
+    .on("mousemove", moveTT)
+    .on("mouseout", hideTT)
+    .transition()
+    .duration(700)
+    .attrTween("d", function(d) {
+      const i = d3.interpolate({ startAngle: d.startAngle, endAngle: d.startAngle }, d);
+      return t => arc(i(t));
+    });
+
+  g.selectAll("text")
+    .data(pie)
+    .join("text")
+    .attr("transform", d => `translate(${labelArc.centroid(d)})`)
+    .attr("text-anchor", "middle")
+    .style("font-size", "11px")
+    .style("fill", "#fff")
+    .text(d => d.data.name);
+}
+
+function renderCirclePacking(data) {
+  clearChart();
+  const W = document.getElementById("chart-wrap").clientWidth;
+  const H = document.getElementById("chart-wrap").clientHeight;
+  if (W === 0 || H === 0) return;
+
+  svg.attr("width", W).attr("height", H);
+  const root = buildHierarchy(data);
+  d3.pack().size([W - 8, H - 8]).padding(3)(root);
+
+  const g = svg.append("g").attr("transform", "translate(4,4)");
+  const nodes = g.selectAll("g.node")
+    .data(root.descendants().filter(d => d.depth > 0))
+    .join("g")
+    .attr("class", "node")
+    .attr("transform", d => `translate(${d.x},${d.y})`);
+
+  nodes.append("circle")
+    .attr("r", 0)
+    .attr("fill", d => (d.children ? "#d9e6f2" : color(d.parent.data.name)))
+    .attr("stroke", "#fff")
+    .attr("stroke-width", 1.5)
+    .on("mouseover", (e, d) => showTT(e, d.data.name, d.value, d.parent ? d.parent.data.name : "Total"))
+    .on("mousemove", moveTT)
+    .on("mouseout", hideTT)
+    .transition()
+    .duration(700)
+    .attr("r", d => d.r);
+
+  nodes.filter(d => !d.children && d.r > 24)
+    .append("text")
+    .attr("text-anchor", "middle")
+    .attr("dy", "0.35em")
+    .style("font-size", "10px")
+    .style("fill", "#222")
+    .text(d => d.data.name);
+}
+
+function renderByGraphName(payload) {
+  const graphName = normalizeGraphName(payload.GraphName);
+  const rows = normalizeRows(payload.data);
+  const safeRows = rows.length ? rows : FALLBACK_DATA;
+
+  setHeader(graphName);
+  subtitle.textContent = `Live from /tree_map/data.json (${graphName})`;
+
+  if (graphName === "GraphName.BAR_GRAPH") return renderBar(safeRows);
+  if (graphName === "GraphName.PIE") return renderPie(safeRows);
+  if (graphName === "GraphName.CIRCLE_PACKING") return renderCirclePacking(safeRows);
+  return renderTreemap(safeRows);
+}
+
+function dataHash(payload) {
+  try {
+    return JSON.stringify(payload);
+  } catch (e) {
+    return "";
+  }
+}
+
+async function fetchLatestData() {
+  try {
+    const response = await fetch(`${DATA_URL}?t=${Date.now()}`, {
+      cache: "no-store",
+      headers: { "Accept": "application/json" }
+    });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    latestPayload = parsePayload(await response.json());
+  } catch (err) {
+    subtitle.textContent = "Using fallback data (server unavailable)";
+    latestPayload = { GraphName: DEFAULT_GRAPH, data: FALLBACK_DATA };
+  }
+}
+
+async function refreshIfChanged() {
+  await fetchLatestData();
+  const currentHash = dataHash(latestPayload);
+  if (currentHash && currentHash !== lastRenderedHash) {
+    lastRenderedHash = currentHash;
+    renderByGraphName(latestPayload);
+  }
+}
+
+refreshIfChanged();
+window.setInterval(refreshIfChanged, POLL_MS);
+window.addEventListener("resize", () => renderByGraphName(latestPayload));
 </script>
 </body>
 </html>
